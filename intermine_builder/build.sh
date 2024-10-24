@@ -52,9 +52,13 @@ if [ -d ${MINE_NAME:-biotestmine} ] && [ ! -z "$(ls -A ${MINE_NAME:-biotestmine}
 else
     # echo "$(date +%Y/%m/%d-%H:%M) Clone ${MINE_NAME:-biotestmine}" #>> /home/intermine/intermine/build.progress
     echo "$(date +%Y/%m/%d-%H:%M) Clone ${MINE_NAME:-biotestmine}"
-    git clone ${MINE_REPO_URL:-https://github.com/intermine/biotestmine} ${MINE_NAME:-biotestmine}
-    echo "$(date +%Y/%m/%d-%H:%M) Update keyword_search.properties to use http://solr" #>> /home/intermine/intermine/build.progress
-    sed -i 's/localhost/'${SOLR_HOST:-solr}'/g' ./${MINE_NAME:-biotestmine}/dbmodel/resources/keyword_search.properties
+    git clone --recurse-submodules ${MINE_REPO_URL:-https://github.com/intermine/biotestmine} ${MINE_NAME:-biotestmine}
+    keyword_search_properties=./${MINE_NAME:-biotestmine}/dbmodel/resources/keyword_search.properties
+    if [ -f ${keyword_search_properties} ]
+    then
+      echo "$(date +%Y/%m/%d-%H:%M) Update keyword_search.properties to use http://solr" #>> /home/intermine/intermine/build.progress
+      sed -i 's/localhost/'${SOLR_HOST:-solr}'/g' ${keyword_search_properties}
+    fi
 fi
 
 # If InterMine or Bio versions have been set (likely because of a custom

@@ -1,4 +1,3 @@
-version: "3"
 services:
   intermine_builder:
     container_name: intermine_builder
@@ -7,13 +6,12 @@ services:
       dockerfile: ./intermine_builder.Dockerfile
     user: ${UID:-1000}:${GID:-1000}
     volumes:
-      # - ./data/mine/data:/home/intermine/intermine/data
+      - ./data/mine/data:/home/intermine/intermine/data
       - ./data/mine/dump:/home/intermine/intermine/dump
       - ./data/mine/configs:/home/intermine/intermine/configs
       - ./data/mine/packages:/home/intermine/.m2
       - ./data/mine/intermine:/home/intermine/.intermine
-      # - ./data/mine/[PUT_YOUR_MINE_NAME_HERE]:/home/intermine/intermine/[PUT_YOUR_MINE_NAME_HERE]
-      - ./data/mine/biotestmine:/home/intermine/intermine/biotestmine
+      - ./data/mine/minimine:/home/intermine/intermine/minimine
     environment:
       - MINE_NAME=${MINE_NAME:-biotestmine}
       - MINE_REPO_URL=${MINE_REPO_URL:-}
@@ -21,6 +19,7 @@ services:
       - MEM_OPTS=${MEM_OPTS:-"-Xmx2g -Xms1g"}
       - IM_REPO_URL=${IM_REPO_URL:-}
       - IM_REPO_BRANCH=${IM_REPO_BRANCH:-}
+      - FORCE_MINE_BUILD=${FORCE_MINE_BUILD:-}
     depends_on: 
       - postgres
       - solr

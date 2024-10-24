@@ -9,7 +9,7 @@ You can use these docker images to create your own InterMine instance. You can l
 
 ## Quickstart
 
-If you're not logged in as root, you will need to create the volume directories which will be shared with the docker containers, to avoid permission errors. This can be done by using the convenience script.
+If you're not logged in as root (or using rootless Podman), you will need to create the volume directories which will be shared with the docker containers, to avoid permission errors. This can be done by using the convenience script.
 
 ```bash
 ./mkdatadirs.sh local.docker-compose.yml
@@ -54,6 +54,23 @@ Instead of building our test mine, you can launch your own custom InterMine by f
 - *IM_DATA_DIR* should not have a trailing slash (`/`)
 
 ### Update data location
+
+### LIS datastore
+
+On the host OS, mount the data store at ./data/mine/data 
+
+e.g., for macOS:
+
+    mount_webdav https://data.legumeinfo.org/dav ./data/mine/data
+
+for a GitHub codespace:
+
+    sudo apt update && sudo apt install -y fuse rclone
+
+    rclone mount --daemon --webdav-url https://data.legumeinfo.org/dav --allow-non-empty --allow-other --attr-timeout 24h --dir-cache-time 24h --poll-interval 0 --vfs-cache-mode full --vfs-read-chunk-size 64k :webdav:/ ./data/mine/data
+
+
+### Other custom data
 
 We now need to tell Docker where the data is located.
 
