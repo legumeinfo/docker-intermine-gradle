@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -o xtrace
+
 if [ -d ${MINE_NAME:-biotestmine} ] && [ ! -z "$(ls -A ${MINE_NAME:-biotestmine})" ] && [ ! $FORCE_MINE_BUILD ]; then
     echo "$(date +%Y/%m/%d-%H:%M) Mine already exists"
     echo "$(date +%Y/%m/%d-%H:%M) Gradle: build webapp"
@@ -133,7 +135,7 @@ if [ -d /home/intermine/intermine/data ]; then
     echo "$(date +%Y/%m/%d-%H:%M) found user data directory"
     if [ !  -n "$(find /home/intermine/intermine/data -maxdepth 0 -type d -empty 2>/dev/null)" ]; then
         for f in *.tar.gz; do
-            tar xzf "$f" && rm "$f"
+            if [ -e "${f}" ]; then tar xzf "$f" && rm "$f"; fi
         done
         cd /home/intermine/intermine
     fi

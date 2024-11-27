@@ -1,10 +1,8 @@
-FROM alpine:3.12.5
-LABEL maintainer="Ank"
+FROM alpine:3.20
 
 ENV JAVA_HOME="/usr/lib/jvm/default-jvm"
 
-RUN apk add --no-cache openjdk8 openjdk8-jre && \
-    ln -sf "${JAVA_HOME}/bin/"* "/usr/bin/"
+RUN apk add --no-cache openjdk11
 
 RUN apk add --no-cache git \
                        maven \
@@ -13,47 +11,46 @@ RUN apk add --no-cache git \
                        perl-utils
 
 RUN apk add --no-cache build-base
-RUN apk add --no-cache -X http://dl-cdn.alpinelinux.org/alpine/edge/testing perl-moosex
 RUN apk add --no-cache wget \
+                        perl-app-cpanminus \
                         perl-module-build \
                         perl-module-build-tiny \
+                        perl-module-find \
                         perl-package-stash \
                         perl-sub-identify \
                         perl-moose \
+                        perl-moosex-types \
                         perl-datetime \
                         perl-html-parser \
                         perl-html-tree \
                         perl-io-gzip \
+                        perl-libwww \
+                        perl-libxml-perl \
                         perl-list-moreutils-xs \
+                        perl-moosex \
                         perl-text-csv_xs \
+                        perl-text-glob \
+                        perl-uri \
+                        perl-xml-dom \
                         perl-xml-libxml \
                         perl-xml-parser
 
 RUN perl -MCPAN -e \
 'my $c = "CPAN::HandleConfig"; $c->load(doit => 1, autoconfig => 1); $c->edit(prerequisites_policy => "follow"); $c->edit(build_requires_install_policy => "yes"); $c->commit'
 
-RUN cpan -i App::cpanminus
-
 RUN cpanm --force Ouch \
-                  LWP \
-                  URI \
-                  Module::Find \
                   Web::Scraper \
                   Number::Format \
                 #   PerlIO::gzip \
                   Perl6::Junction \
                 #   List::MoreUtils \
-                  Module::Find \
                 #   Moose \
                 #   MooseX::Role::WithOverloading \
-                  MooseX::Types \
                   MooseX::FollowPBP \
                   MooseX::ABC \
                   MooseX::FileAttribute \
                 #   Text::CSV_XS \
-                  Text::Glob \
-                  XML::Parser::PerlSAX \
-                  XML::DOM
+                  XML::Parser::PerlSAX
                 #  Getopt::Std \
                 #  Digest::MD5 \
                 #  Log::Handler
