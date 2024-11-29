@@ -1,0 +1,12 @@
+[submodule "data/mine/intermine"]
+	path = data/mine/intermine
+	url = https://github.com/legumeinfo/intermine.git
+	branch = 5.1.0.4
+[submodule "data/mine/lis-bio-sources"]
+	path = data/mine/lis-bio-sources
+	url = https://github.com/legumeinfo/lis-bio-sources
+	branch = 5.1.0.4-jcenter-sunset
+[submodule "data/mine/minimine"]
+	path = data/mine/minimine
+	url = https://github.com/legumeinfo/minimine.git
+	branch = 5.1.0.4

@@ -2,7 +2,7 @@
 
 set -o xtrace
 
-if [ -d ${MINE_NAME:-biotestmine} ] && [ ! -z "$(ls -A ${MINE_NAME:-biotestmine})" ] && [ ! $FORCE_MINE_BUILD ]; then
+if [ -f ${MINE_NAME:-biotestmine}/build.done ] && [ ! $FORCE_MINE_BUILD ]; then
     echo "$(date +%Y/%m/%d-%H:%M) Mine already exists"
     echo "$(date +%Y/%m/%d-%H:%M) Gradle: build webapp"
     cd /home/intermine/intermine
@@ -15,52 +15,58 @@ fi
 
 set -e
 
-cd /home/intermine/intermine
+cd /home/intermine/.intermine
 
-# Empty log
-echo "" > /home/intermine/intermine/build.progress
-
-# Build InterMine if any of the envvars are specified.
-if [ ! -z ${IM_REPO_URL} ] || [ ! -z ${IM_REPO_BRANCH} ]; then
-    echo "$(date +%Y/%m/%d-%H:%M) Start InterMine build" #>> /home/intermine/intermine/build.progress
-    echo "$(date +%Y/%m/%d-%H:%M) Cloning ${IM_REPO_URL:-https://github.com/intermine/intermine} branch ${IM_REPO_BRANCH:-master} for InterMine build" #>> /home/intermine/intermine/build.progress
-    git clone ${IM_REPO_URL:-https://github.com/intermine/intermine} intermine --single-branch --branch ${IM_REPO_BRANCH:-master} --depth=1
-
-    cd intermine
-
-    (cd plugin && ./gradlew clean && ./gradlew install) &&
-    (cd intermine && ./gradlew clean && ./gradlew install) &&
-    (cd bio && ./gradlew clean && ./gradlew install) &&
-    (cd bio/sources && ./gradlew clean && ./gradlew install) &&
-    (cd bio/postprocess/ && ./gradlew clean && ./gradlew install)
-
-    # Read the version numbers of the built InterMine, as we'll need to set
-    # the mine to use the same versions for it to use the local build.
-    IM_VERSION=$(sed -n "s/^\s*version.*\+'\(.*\)'\s*$/\1/p" intermine/build.gradle)
-    BIO_VERSION=$(sed -n "s/^\s*version.*\+'\(.*\)'\s*$/\1/p" bio/build.gradle)
-
-    cd /home/intermine/intermine
+if [ ! -f build.done ] || ${FORCE_MINE_BUILD:-false}
+then
+  # Empty log
+  echo "" > /home/intermine/intermine/build.progress
+  
+  # Build InterMine if any of the envvars are specified.
+  echo "$(date +%Y/%m/%d-%H:%M) Start InterMine build" #>> /home/intermine/intermine/build.progress
+  
+  (cd plugin && ./gradlew clean && ./gradlew install) &&
+  (cd intermine && ./gradlew clean && ./gradlew install) &&
+  (cd bio && ./gradlew clean && ./gradlew install) &&
+  (cd bio/sources && ./gradlew clean && ./gradlew install) &&
+  (cd bio/postprocess/ && ./gradlew clean && ./gradlew install)
+  touch build.done
 fi
 
+# Read the version numbers of the built InterMine, as we'll need to set
+# the mine to use the same versions for it to use the local build.
+IM_VERSION=$(sed -n "s/^\s*version.*\+'\(.*\)'\s*$/\1/p" intermine/build.gradle)
+BIO_VERSION=$(sed -n "s/^\s*version.*\+'\(.*\)'\s*$/\1/p" bio/build.gradle)
+
+cd /home/intermine/intermine/lis-bio-sources
+
+if [ ! -f build.done ] || ${FORCE_MINE_BUILD:-false}
+then
+  echo "Starting lis-bio-sources build"
+  # ./gradlew install fails on bio-source-lis-mstmap; install needed packages individually
+  ./gradlew bio-source-lis-annotation:install
+  ./gradlew bio-source-lis-description:install
+  ./gradlew bio-source-lis-expression:install
+  ./gradlew bio-source-lis-genefamily:install
+  ./gradlew bio-source-lis-genome:install
+  ./gradlew bio-source-lis-gwas:install
+  ./gradlew bio-source-lis-map:install
+  ./gradlew bio-source-lis-markers:install
+  ./gradlew bio-source-lis-phylotree:install
+  ./gradlew bio-source-lis-qtl:install
+  ./gradlew --scan --debug --stacktrace bio-source-lis-synteny:install # FIXME
+  touch build.done
+fi
+
+cd /home/intermine/intermine
 
 echo "Starting mine build"
-echo $MINE_REPO_URL
-# Check if mine exists and is not empty
-if [ -d ${MINE_NAME:-biotestmine} ] && [ ! -z "$(ls -A ${MINE_NAME:-biotestmine})" ]; then
-    echo "$(date +%Y/%m/%d-%H:%M) Update ${MINE_NAME:-biotestmine} to newest version" #>> /home/intermine/intermine/build.progress
-    cd ${MINE_NAME:-biotestmine}
-    # git pull
-    cd /home/intermine/intermine
-else
-    # echo "$(date +%Y/%m/%d-%H:%M) Clone ${MINE_NAME:-biotestmine}" #>> /home/intermine/intermine/build.progress
-    echo "$(date +%Y/%m/%d-%H:%M) Clone ${MINE_NAME:-biotestmine}"
-    git clone --recurse-submodules ${MINE_REPO_URL:-https://github.com/intermine/biotestmine} ${MINE_NAME:-biotestmine}
-    keyword_search_properties=./${MINE_NAME:-biotestmine}/dbmodel/resources/keyword_search.properties
-    if [ -f ${keyword_search_properties} ]
-    then
-      echo "$(date +%Y/%m/%d-%H:%M) Update keyword_search.properties to use http://solr" #>> /home/intermine/intermine/build.progress
-      sed -i 's/localhost/'${SOLR_HOST:-solr}'/g' ${keyword_search_properties}
-    fi
+# echo "$(date +%Y/%m/%d-%H:%M) Clone ${MINE_NAME:-biotestmine}" #>> /home/intermine/intermine/build.progress
+keyword_search_properties=./${MINE_NAME:-biotestmine}/dbmodel/resources/keyword_search.properties
+if [ -f ${keyword_search_properties} ]
+then
+  echo "$(date +%Y/%m/%d-%H:%M) Update keyword_search.properties to use http://solr" #>> /home/intermine/intermine/build.progress
+  sed -i 's/localhost/'${SOLR_HOST:-solr}'/g' ${keyword_search_properties}
 fi
 
 # If InterMine or Bio versions have been set (likely because of a custom
@@ -74,10 +80,8 @@ fi
 
 # Copy project_build from intermine_scripts repo
 if [ ! -f /home/intermine/intermine/${MINE_NAME:-biotestmine}/project_build ]; then
-    echo "$(date +%Y/%m/%d-%H:%M) Cloning intermine scripts repo to /home/intermine/intermine/intermine-scripts"
-    git clone https://github.com/intermine/intermine-scripts
     echo "$(date +%Y/%m/%d-%H:%M) Copy project_build to /home/intermine/intermine/${MINE_NAME:-biotestmine}"
-    cp /home/intermine/intermine/intermine-scripts/project_build /home/intermine/intermine/${MINE_NAME:-biotestmine}/project_build
+    wget -O /home/intermine/intermine/${MINE_NAME:-biotestmine}/project_build https://raw.githubusercontent.com/intermine/intermine-scripts/refs/heads/master/project_build
     chmod +x /home/intermine/intermine/${MINE_NAME:-biotestmine}/project_build
 fi
 
@@ -216,6 +220,8 @@ echo "$(date +%Y/%m/%d-%H:%M) Running project_build script"
 
 echo "$(date +%Y/%m/%d-%H:%M) Gradle: build userDB" #>> /home/intermine/intermine/build.progress
 ./gradlew buildUserDB --stacktrace #>> /home/intermine/intermine/build.progress
+
+touch build.done
 
 echo "$(date +%Y/%m/%d-%H:%M) Gradle: build webapp" #>> /home/intermine/intermine/build.progress
 # ./gradlew clean

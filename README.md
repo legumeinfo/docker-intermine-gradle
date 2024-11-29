@@ -9,12 +9,6 @@ You can use these docker images to create your own InterMine instance. You can l
 
 ## Quickstart
 
-If you're not logged in as root (or using rootless Podman), you will need to create the volume directories which will be shared with the docker containers, to avoid permission errors. This can be done by using the convenience script.
-
-```bash
-./mkdatadirs.sh local.docker-compose.yml
-```
-
 Run the command to build the images locally and start an example InterMine instance - BioTestMine.
 
 ```bash
