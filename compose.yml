@@ -1,0 +1,75 @@
+# Development
+
+services:
+  mine:
+    build:
+      context: ./intermine_builder
+      dockerfile: ./intermine_builder.Dockerfile
+    user: ${UID:-1000}:${GID:-1000}
+    volumes:
+      - /home/intermine/.gradle
+      - /home/intermine/.m2
+      # - ./data/mine/[PUT_YOUR_MINE_NAME_HERE]:/home/intermine/intermine/[PUT_YOUR_MINE_NAME_HERE]
+      - ./data/mine/minimine:/home/intermine/intermine/minimine
+    environment:
+      MINE_NAME:
+      IM_DATA_DIR:
+      FORCE_MINE_BUILD:
+    depends_on: 
+      postgres:
+        condition: service_healthy
+      solr:
+        condition: service_started
+      tomcat:
+        condition: service_started
+
+  load:
+    build:
+      context: ./intermine_builder 
+      dockerfile: ./intermine_builder.Dockerfile
+    command: ["load"]
+    environment:
+      GRADLE_OPTS: '-server -Xmx4g -Xms1g -XX:+UseParallelGC -XX:SoftRefLRUPolicyMSPerMB=1 -XX:MaxHeapFreeRatio=99 -Dorg.gradle.daemon=false -Duser.home=/home/intermine'
+      MINE_NAME:
+    volumes:
+      - ./data/mine/data:/home/shokin/v2
+      - ./data/mine/minimine:/home/intermine/intermine/minimine
+      - /home/intermine/.gradle
+    depends_on:
+      postgres:
+        condition: service_healthy
+    profiles: [load]
+    
+  postgres:
+    image: docker.io/library/postgres:17-alpine
+    environment:
+      PGDATA: /var/lib/postgresql/data/pgdata
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_INITDB_ARGS: --auth=peer --encoding=SQL_ASCII --lc-collate=C --lc-ctype=C
+    user: postgres
+    command: ["-c", "config_file=/opt/postgresql.conf"]
+    healthcheck:
+      test: "pg_isready || exit 1"
+    volumes:
+      - ./postgres/init_postgresql.sql:/docker-entrypoint-initdb.d/init_postgresql.sql:ro
+      - ./postgres/postgresql.conf:/opt/postgresql.conf:ro
+      - /var/lib/postgresql/data
+
+  solr:
+    build:
+      context: ./solr
+      dockerfile: ./solr.Dockerfile
+    environment:
+      - MEM_OPTS=${MEM_OPTS:-"-Xmx2g -Xms1s"}
+      - MINE_NAME=${MINE_NAME}
+    volumes:
+      - /var/solr
+
+  tomcat:
+    build:
+      context: ./tomcat
+      dockerfile: ./tomcat.Dockerfile
+    environment:
+      - MEM_OPTS=${MEM_OPTS:-"-Xmx1g -Xms500m"}
+    ports:
+      - ${TOMCAT_HOST_PORT:-9999}:${TOMCAT_PORT:-8080}
