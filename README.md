@@ -9,6 +9,8 @@ You can use these docker images to create your own InterMine instance.
 
 ## Quickstart
 
+_Ensure git submodules are updated/initialized before building: use `git clone --recurse-submodules` to clone this repository, or `git submodule update --init --recursive` after cloning._
+
 ### LIS datastore
 
 On the host OS, mount the data store at ./data/mine/data 
@@ -17,9 +19,10 @@ e.g., for macOS:
 
     mount_webdav https://data.legumeinfo.org/dav ./data/mine/data
 
-for a GitHub codespace:
+for a GitHub codespace (needs minimum 16GB RAM / 4-core machine type):
 
     sudo apt update && sudo apt install -y fuse rclone
+    sudo sed -i -e 's/#user_allow_other/user_allow_other/' /etc/fuse.conf
 
     rclone mount --daemon --webdav-url https://data.legumeinfo.org/dav --allow-non-empty --allow-other --attr-timeout 24h --dir-cache-time 24h --poll-interval 0 --vfs-cache-mode full --vfs-read-chunk-size 64k :webdav:/ ./data/mine/data
 
