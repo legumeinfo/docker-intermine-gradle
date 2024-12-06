@@ -5,9 +5,12 @@ services:
     build:
       context: ./intermine_builder
       dockerfile: ./intermine_builder.Dockerfile
-    user: ${UID:-1000}:${GID:-1000}
+      target: mine
     environment:
       MINE_NAME:
+    volumes:
+      - ./intermine_builder/minimine:/home/intermine/intermine/minimine
+      - /home/intermine/.gradle
     depends_on: 
       postgres:
         condition: service_healthy
@@ -20,6 +23,7 @@ services:
     build:
       context: ./intermine_builder 
       dockerfile: ./intermine_builder.Dockerfile
+      target: load
     command: ["load"]
     environment:
       GRADLE_OPTS: '-server -Xmx8g -Xms1g -XX:+UseParallelGC -XX:SoftRefLRUPolicyMSPerMB=1 -XX:MaxHeapFreeRatio=99 -Dorg.gradle.daemon=false -Duser.home=/home/intermine'
