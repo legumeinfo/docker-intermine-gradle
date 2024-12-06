@@ -6,15 +6,8 @@ services:
       context: ./intermine_builder
       dockerfile: ./intermine_builder.Dockerfile
     user: ${UID:-1000}:${GID:-1000}
-    volumes:
-      - /home/intermine/.gradle
-      - /home/intermine/.m2
-      # - ./data/mine/[PUT_YOUR_MINE_NAME_HERE]:/home/intermine/intermine/[PUT_YOUR_MINE_NAME_HERE]
-      - ./data/mine/minimine:/home/intermine/intermine/minimine
     environment:
       MINE_NAME:
-      IM_DATA_DIR:
-      FORCE_MINE_BUILD:
     depends_on: 
       postgres:
         condition: service_healthy
@@ -29,11 +22,11 @@ services:
       dockerfile: ./intermine_builder.Dockerfile
     command: ["load"]
     environment:
-      GRADLE_OPTS: '-server -Xmx4g -Xms1g -XX:+UseParallelGC -XX:SoftRefLRUPolicyMSPerMB=1 -XX:MaxHeapFreeRatio=99 -Dorg.gradle.daemon=false -Duser.home=/home/intermine'
+      GRADLE_OPTS: '-server -Xmx8g -Xms1g -XX:+UseParallelGC -XX:SoftRefLRUPolicyMSPerMB=1 -XX:MaxHeapFreeRatio=99 -Dorg.gradle.daemon=false -Duser.home=/home/intermine'
       MINE_NAME:
     volumes:
-      - ./data/mine/data:/home/shokin/v2
-      - ./data/mine/minimine:/home/intermine/intermine/minimine
+      - ./data/data-store:/home/intermine/data/data-store:ro
+      - ./intermine_builder/minimine:/home/intermine/intermine/minimine
       - /home/intermine/.gradle
     depends_on:
       postgres:

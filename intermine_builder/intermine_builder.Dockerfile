@@ -1,48 +1,28 @@
-FROM alpine:3.20
+FROM docker.io/obolibrary/robot:v1.9.7 AS data
+SHELL ["/bin/bash", "-o", "pipefail", "-euc"]
+WORKDIR /data/crop-ontology
+RUN for crop in 335 340; \
+  do curl -Ssf  https://cropontology.org/ontology/CO_${crop}/rdf \
+     | robot convert --check false -i /dev/stdin --format obo -o /dev/stdout \
+     | sed -e '/^name:/d' -e "s/CO:${crop}/CO_${crop}/g" > CO_${crop}.obo; done
+WORKDIR /data/InterPro
+RUN curl -Ssf https://ftp.ebi.ac.uk/pub/databases/interpro/releases/103.0/interpro.xml.gz | gzip -dc > interpro.xml
+WORKDIR /data/Pfam
+RUN curl -Ssf https://ftp.ebi.ac.uk/pub/databases/Pfam/releases/Pfam37.0/database_files/pfamA.txt.gz | gzip -d > pfamA.txt
+ADD --link http://data.pantherdb.org/ftp/hmm_classifications/19.0/PANTHER19.0_HMM_classifications /data/PANTHER/
+ADD --link https://raw.githubusercontent.com/The-Sequence-Ontology/SO-Ontologies/refs/heads/master/Ontology_Files/so-simple.obo /data/SO-Ontologies/Ontology_Files/
+ADD --link https://raw.githubusercontent.com/Planteome/plant-ontology/refs/heads/master/po.obo /data/plant-ontology/
+ADD --link https://raw.githubusercontent.com/Planteome/plant-trait-ontology/refs/heads/master/to.obo /data/plant-trait-ontology/
+ADD --link https://purl.obolibrary.org/obo/go/go-basic.obo /data/gene-ontology/go-basic.obo
+ADD --link https://ftp.ebi.ac.uk/pub/databases/GO/goa/external2go/interpro2go /data/InterPro/ontology/interpro2go
 
-ENV JAVA_HOME="/usr/lib/jvm/default-jvm"
-
-RUN apk add --no-cache \
-  build-base \
-  maven \
-  openjdk11 \
-  perl \
-  perl-app-cpm \
-  perl-datetime \
-  perl-html-parser \
-  perl-html-tree \
-  perl-io-gzip \
-  perl-libwww \
-  perl-libxml-perl \
-  perl-list-moreutils-xs \
-  perl-module-build \
-  perl-module-build-tiny \
-  perl-module-find \
-  perl-moose \
-  perl-moosex \
-  perl-moosex-types \
-  perl-package-stash \
-  perl-sub-identify \
-  perl-text-csv_xs \
-  perl-text-glob \
-  perl-uri \
-  perl-utils \
-  perl-xml-dom \
-  perl-xml-libxml \
-  perl-xml-parser
-
-# perl-number-format in alpine edge
-RUN cpm install -g \
-  Ouch \
-  Web::Scraper \
-  Number::Format \
-  Perl6::Junction \
-  MooseX::FollowPBP \
-  MooseX::ABC \
-  MooseX::FileAttribute
+FROM docker.io/library/maven:3-amazoncorretto-11-alpine
 
 RUN mkdir -m 777 /home/intermine && mkdir -m 777 /home/intermine/intermine
 
+# JDK_JAVA_OPTIONS
+# override default MAVEN_CONFIG=/root/.m2 in maven base image
+ENV MAVEN_CONFIG="/home/intermine/.m2"
 ENV MEM_OPTS="-Xmx2g -Xms1g"
 ENV GRADLE_OPTS="-server ${MEM_OPTS} -XX:+UseParallelGC -XX:SoftRefLRUPolicyMSPerMB=1 -XX:MaxHeapFreeRatio=99 -Dorg.gradle.daemon=false -Duser.home=/home/intermine"
 ENV HOME="/home/intermine"
@@ -53,18 +33,19 @@ SHELL ["/bin/sh", "-euc"]
 
 # Build intermine
 COPY ./intermine /home/intermine/.intermine
-WORKDIR /home/intermine/.intermine
-RUN --mount=type=cache,target=/home/intermine/.gradle \
+RUN cd /home/intermine/.intermine; \
   for dir in plugin intermine bio bio/sources bio/postprocess; \
   do \
     (cd ${dir} && ./gradlew install && ./gradlew clean) \
-  done
+  done; \
+  rm -rf /home/intermine/.gradle
 
 # Build lis-bio-sources
 COPY ./lis-bio-sources /mnt/lis-bio-sources
-WORKDIR /mnt/lis-bio-sources
-RUN --mount=type=cache,target=/home/intermine/.gradle \
-  ./gradlew install; ./gradlew clean
+RUN cd /mnt/lis-bio-sources \
+  && ./gradlew install \
+  && ./gradlew clean \
+  &&  rm -rf /home/intermine/.gradle
 
 COPY ./mine.properties /etc/
 
@@ -74,5 +55,7 @@ ENV TOMCAT_USER="tomcat"
 ENV TOMCAT_PWD="tomcat"
 
 COPY --chmod=775 ./entrypoint.sh /usr/local/bin
+
+COPY --link --from=data /data/ /home/intermine/data/
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

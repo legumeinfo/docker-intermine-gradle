@@ -7,6 +7,6 @@
 	url = https://github.com/legumeinfo/lis-bio-sources
 	branch = 5.1.0.4-jcenter-sunset
 [submodule "data/mine/minimine"]
-	path = data/mine/minimine
+	path = intermine_builder/minimine
 	url = https://github.com/legumeinfo/minimine
 	branch = 5.1.0.4

@@ -13,18 +13,18 @@ _Ensure git submodules are updated/initialized before building: use `git clone -
 
 ### LIS datastore
 
-On the host OS, mount the data store at ./data/mine/data 
+On the host OS, mount the data store at ./data/data-store
 
 e.g., for macOS:
 
-    mount_webdav https://data.legumeinfo.org/dav ./data/mine/data
+    mount_webdav https://data.legumeinfo.org/dav ./data/data-store
 
 for a GitHub codespace (needs minimum 16GB RAM / 4-core machine type):
 
     sudo apt update && sudo apt install -y fuse rclone
     sudo sed -i -e 's/#user_allow_other/user_allow_other/' /etc/fuse.conf
 
-    rclone mount --daemon --webdav-url https://data.legumeinfo.org/dav --allow-non-empty --allow-other --attr-timeout 24h --dir-cache-time 24h --poll-interval 0 --vfs-cache-mode full --vfs-read-chunk-size 64k :webdav:/ ./data/mine/data
+    rclone mount --daemon --webdav-url https://data.legumeinfo.org/dav --allow-non-empty --allow-other --attr-timeout 24h --dir-cache-time 24h --poll-interval 0 --vfs-cache-mode full --vfs-read-chunk-size 64k :webdav:/ ./data/data-store
 
 Run the command to build the image and load the database:
 
