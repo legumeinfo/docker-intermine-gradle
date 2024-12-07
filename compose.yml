@@ -35,6 +35,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      solr:
+        condition: service_healthy
     profiles: [load]
     
   postgres:
@@ -44,7 +46,9 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_INITDB_ARGS: --auth=peer --encoding=SQL_ASCII --lc-collate=C --lc-ctype=C
     user: postgres
-    command: ["-c", "config_file=/opt/postgresql.conf"]
+    command: ["-c", "config_file=/opt/postgresql.conf",
+              "-c", "max_wal_senders=0",
+              "-c", "wal_level=minimal"]
     healthcheck:
       test: "pg_isready || exit 1"
     volumes:

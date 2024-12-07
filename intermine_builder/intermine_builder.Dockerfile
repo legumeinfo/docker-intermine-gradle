@@ -63,8 +63,6 @@ ENV TOMCAT_PWD="tomcat"
 
 COPY --chmod=775 ./entrypoint.sh /usr/local/bin
 
-COPY --link --from=data /data/ /home/intermine/data/
-
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 
 FROM mine AS load
