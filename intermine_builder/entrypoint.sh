@@ -11,6 +11,7 @@ sed -e "s/PSQL_USER/${PSQL_USER}/g" \
 
 case ${1:-} in
   load) ./gradlew buildDB --stacktrace
+        ./gradlew buildUserDB --stacktrace
         ./gradlew integrate --stacktrace
         ./gradlew postprocess --stacktrace ;;
 
