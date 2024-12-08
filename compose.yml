@@ -1,15 +1,14 @@
 # Development
 
 services:
-  mine:
+  intermine_builder:
     build:
       context: ./intermine_builder
       dockerfile: ./intermine_builder.Dockerfile
-      target: mine
-    environment:
-      MINE_NAME:
+      args:
+        MINE_NAME: ${MINE_NAME}
     volumes:
-      - ./intermine_builder/minimine:/home/intermine/intermine/minimine
+      - ./data/data-store:/home/intermine/data/data-store:ro
       - /home/intermine/.gradle
     depends_on: 
       postgres:
@@ -19,26 +18,6 @@ services:
       tomcat:
         condition: service_started
 
-  load:
-    build:
-      context: ./intermine_builder 
-      dockerfile: ./intermine_builder.Dockerfile
-      target: load
-    command: ["load"]
-    environment:
-      GRADLE_OPTS: '-server -Xmx8g -Xms1g -XX:+UseParallelGC -XX:SoftRefLRUPolicyMSPerMB=1 -XX:MaxHeapFreeRatio=99 -Dorg.gradle.daemon=false -Duser.home=/home/intermine'
-      MINE_NAME:
-    volumes:
-      - ./data/data-store:/home/intermine/data/data-store:ro
-      - ./intermine_builder/minimine:/home/intermine/intermine/minimine
-      - /home/intermine/.gradle
-    depends_on:
-      postgres:
-        condition: service_healthy
-      solr:
-        condition: service_healthy
-    profiles: [load]
-    
   postgres:
     image: docker.io/library/postgres:17-alpine
     environment:
@@ -47,7 +26,11 @@ services:
       POSTGRES_INITDB_ARGS: --auth=peer --encoding=SQL_ASCII --lc-collate=C --lc-ctype=C
     user: postgres
     command: ["-c", "config_file=/opt/postgresql.conf",
+              "-c", "checkpoint_timeout=60min",
+              "-c", "fsync=off",
               "-c", "max_wal_senders=0",
+              "-c", "max_wal_size=4GB",
+              "-c", "wal_compression=zstd",
               "-c", "wal_level=minimal"]
     healthcheck:
       test: "pg_isready || exit 1"

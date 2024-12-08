@@ -29,8 +29,13 @@ for a GitHub codespace (needs minimum 16GB RAM / 4-core machine type):
 Run the command to build the image and load the database:
 
 ```bash
-docker-compose run --remove-orphans load
-docker-compose up
+docker compose up
+```
+
+To run an arbitrary command (such as `gradlew <subcommand>`) in the intermine_builder environment after the intermine intermine_builder service has completed (e.g., for `bash -l`):
+
+```
+docker compose run intermine_builder bash -l
 ```
 
 Visit **`localhost:9999/minimine`** to see your new mine.

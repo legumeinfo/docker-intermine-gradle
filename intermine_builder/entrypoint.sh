@@ -42,14 +42,23 @@ index.solrurl = http://solr:8983/solr/${MINE_NAME}-search/
 index.batch.size = 1000
 END
 
-case ${1:-} in
-  load) ./gradlew buildDB --stacktrace
-        ./gradlew buildUserDB --stacktrace
-        ./gradlew integrate --stacktrace
-        ./gradlew postprocess --stacktrace ;;
+if [ ${#} -gt 0 ]
+then
+  exec "$@" # run any manually-specified commands
+elif [ -f /home/intermine/.gradle/${MINE_NAME}.done ]
+then
+  echo "${MINE_NAME} already built"
+  exit 0;
+else
+  ./gradlew buildDB --stacktrace
+  ./gradlew buildUserDB --stacktrace
+  ./gradlew integrate --stacktrace
+  ./gradlew postprocess --stacktrace
 
-     *) ./gradlew cargoDeployRemote
-        # intermine/intermine issue #2162
-        sleep 60
-        ./gradlew cargoRedeployRemote  --stacktrace;;
-esac
+  ./gradlew cargoDeployRemote
+  # intermine/intermine issue #2162
+  sleep 60
+  ./gradlew cargoRedeployRemote  --stacktrace
+
+  touch /home/intermine/.gradle/${MINE_NAME}.done
+fi
