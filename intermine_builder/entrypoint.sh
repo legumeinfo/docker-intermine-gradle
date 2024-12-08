@@ -4,7 +4,8 @@ set -o errexit -o nounset -o xtrace
 
 cd /home/intermine/intermine/${MINE_NAME}
 
-sed -e "s/PSQL_USER/${PSQL_USER}/g" \
+sed -e "s/MINE_NAME/${MINE_NAME}/g" \
+    -e "s/PSQL_USER/${PSQL_USER}/g" \
     -e "s/PSQL_PWD/${PSQL_PWD}/g" \
     -e "s/TOMCAT_USER/${TOMCAT_USER}/g" \
     -e "s/TOMCAT_PWD/${TOMCAT_PWD}/g" /etc/mine.properties > /home/intermine/.intermine/${MINE_NAME}.properties
