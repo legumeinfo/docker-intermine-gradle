@@ -14,7 +14,7 @@ services:
       postgres:
         condition: service_healthy
       solr:
-        condition: service_started
+        condition: service_healthy
       tomcat:
         condition: service_started
 
@@ -28,6 +28,7 @@ services:
     command: ["-c", "config_file=/opt/postgresql.conf",
               "-c", "checkpoint_timeout=60min",
               "-c", "fsync=off",
+              "-c", "full_page_writes=on",
               "-c", "max_wal_senders=0",
               "-c", "max_wal_size=4GB",
               "-c", "wal_compression=zstd",

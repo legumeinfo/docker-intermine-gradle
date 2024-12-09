@@ -9,22 +9,31 @@ You can use these docker images to create your own InterMine instance.
 
 ## Quickstart
 
-_Ensure git submodules are updated/initialized before building: use `git clone --recurse-submodules` to clone this repository, or `git submodule update --init --recursive` after cloning._
+### Dev Container (including GitHub Codespace)
 
-### LIS datastore
+For GitHub Codespace, choose a minimum 16GB RAM / 4-core machine type.
+All dependencies are preinstalled & the data-store automatically mounted at dev container start.
 
-On the host OS, mount the data store at ./data/data-store
+### macOS & WSL (Debian/ubuntu)
+
+1. Install OCI container runtime (e.g., Docker / Docker Desktop or Rancher Desktop).
+
+2. Ensure git submodules are updated/initialized before building: use `git clone --recurse-submodules` to clone this repository, or `git submodule update --init --recursive` after cloning.
+
+3. mount the data store at ./data/data-store
 
 e.g., for macOS:
 
     mount_webdav https://data.legumeinfo.org/dav ./data/data-store
 
-for a GitHub codespace (needs minimum 16GB RAM / 4-core machine type):
+for Debian/Ubuntu:
 
     sudo apt update && sudo apt install -y fuse rclone
     sudo sed -i -e 's/#user_allow_other/user_allow_other/' /etc/fuse.conf
 
     rclone mount --daemon --webdav-url https://data.legumeinfo.org/dav --allow-non-empty --allow-other --attr-timeout 24h --dir-cache-time 24h --poll-interval 0 --vfs-cache-mode full --vfs-read-chunk-size 64k :webdav:/ ./data/data-store
+
+### Loading / Running
 
 Run the command to build the image and load the database:
 

@@ -1,0 +1,27 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/docker-in-docker
+{
+	"name": "Docker in Docker",
+	"image": "mcr.microsoft.com/devcontainers/base:bullseye",
+
+	"features": {
+		"ghcr.io/devcontainers/features/docker-in-docker:2": {
+			"version": "latest",
+			"enableNonRootDocker": "true",
+			"moby": "false"
+		},
+		"ghcr.io/devcontainers-extra/features/rclone:1": {}
+	},
+	"postCreateCommand": "sudo apt update && sudo apt install -y fuse3 && sudo sed -i -e 's/#user_allow_other/user_allow_other/' /etc/fuse.conf && git submodule update --init --recursive",
+	"postStartCommand": ["rclone", "mount",
+	    "--daemon",
+		"--allow-non-empty",
+		"--allow-other",
+		"--webdav-url", "https://data.legumeinfo.org/dav",
+		"--attr-timeout", "24h",
+		"--dir-cache-time", "24h",
+		"--poll-interval", "0",
+		"--vfs-cache-mode", "full",
+		"--vfs-read-chunk-size", "64k",
+		":webdav:/", "./data/data-store"]
+}
