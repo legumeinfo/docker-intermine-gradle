@@ -11,7 +11,8 @@ You can use these docker images to create your own InterMine instance.
 
 ### Dev Container (including GitHub Codespace)
 
-For GitHub Codespace, choose a minimum 16GB RAM / 4-core machine type.
+For GitHub Codespace, choose a minimum 32GB RAM / 8-core machine type (with 16GB memory, SIGNAL 143 (SIGTERM) errors can be observed at load time)
+
 All dependencies are preinstalled & the data-store automatically mounted at dev container start.
 
 ### macOS & WSL (Debian/ubuntu)

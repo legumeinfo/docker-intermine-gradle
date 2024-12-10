@@ -25,12 +25,13 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_INITDB_ARGS: --auth=peer --encoding=SQL_ASCII --lc-collate=C --lc-ctype=C
     user: postgres
+    shm_size: 1g
     command: ["-c", "config_file=/opt/postgresql.conf",
               "-c", "checkpoint_timeout=60min",
               "-c", "fsync=off",
               "-c", "full_page_writes=on",
               "-c", "max_wal_senders=0",
-              "-c", "max_wal_size=4GB",
+              "-c", "max_wal_size=8GB",
               "-c", "wal_compression=zstd",
               "-c", "wal_level=minimal"]
     healthcheck:
