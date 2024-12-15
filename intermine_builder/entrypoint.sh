@@ -5,8 +5,12 @@ set -o errexit -o nounset -o xtrace
 cd /home/intermine/intermine/${MINE_NAME}
 
 sed -e "s/MINE_NAME/${MINE_NAME}/g" \
-    -e "s/PSQL_USER/${PSQL_USER}/g" \
-    -e "s/PSQL_PWD/${PSQL_PWD}/g" \
+    -e "s/PGHOST/${PGHOST}/g" \
+    -e "s/PGPORT/${PGPORT}/g" \
+    -e "s/PGUSER/${PGUSER}/g" \
+    -e "s/PGPASSWORD/${PGPASSWORD}/g" \
+    -e "s/SOLR_HOST/${SOLR_HOST}/g" \
+    -e "s/TOMCAT_HOST_PORT/${TOMCAT_HOST_PORT}/g" \
     -e "s/TOMCAT_USER/${TOMCAT_USER}/g" \
     -e "s/TOMCAT_PWD/${TOMCAT_PWD}/g" /etc/mine.properties > /home/intermine/.intermine/${MINE_NAME}.properties
 
@@ -15,7 +19,7 @@ max.field.values = 200
 
 # autocomplete = in forms on the webapp, these fields will offer suggestions to the user as they type
 # index is created in post process create-autocomplete-index
-autocomplete.solrurl = http://solr:8983/solr/${MINE_NAME}-autocomplete/
+autocomplete.solrurl = http://${SOLR_HOST}/solr/${MINE_NAME}-autocomplete/
 
 org.intermine.model.bio.OntologyTerm.autocomplete = name
 org.intermine.model.bio.SOTerm.autocomplete = name
@@ -39,7 +43,7 @@ index.boost.Protein = 1.2
 
 search.debug = false
 
-index.solrurl = http://solr:8983/solr/${MINE_NAME}-search/
+index.solrurl = http://${SOLR_HOST}/solr/${MINE_NAME}-search/
 index.batch.size = 1000
 END
 
@@ -54,12 +58,14 @@ else
   ./gradlew buildDB --stacktrace
   ./gradlew buildUserDB --stacktrace
   ./gradlew integrate --stacktrace
-  ./gradlew postprocess --stacktrace
+  ## Run postprocesses individually to avoid postgres
+  ## "FATAL: sorry, too many clients already" error
+  ## intermine/intermine issue #1971
+  #./gradlew postprocess --stacktrace
+  for name in $(sed  -n '/post-process/s/.*name="\([^"]*\)".*/\1/p' project.xml)
+  do
+    ./gradlew postprocess -Pprocess=${name} --stacktrace
+  done
 
   ./gradlew cargoDeployRemote
-  # intermine/intermine issue #2162
-  sleep 60
-  ./gradlew cargoRedeployRemote  --stacktrace
-
-  touch /home/intermine/.gradle/${MINE_NAME}.done
 fi

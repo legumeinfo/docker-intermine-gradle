@@ -4,10 +4,40 @@ You can use these docker images to create your own InterMine instance.
 
 ## Requirements
 
+Either:
  - [Docker](https://docs.docker.com/install/)
  - [Docker compose](https://docs.docker.com/compose/install/)
 
+ Or:
+ - [Apptainer](https://apptainer.org/)
+
 ## Quickstart
+
+### Apptainer
+
+Allocate at least 32 GB memory and 4 CPUs for the job.
+
+1. Ensure git submodules are updated/initialized before building: use `git clone --recurse-submodules` to clone this repository, or `git submodule update --init --recursive` after cloning.
+
+2. Edit the Makefile if necessary, adjusting the `DATASTORE` and `CONTAINERS` directory paths.
+
+3. Load the Apptainer environment module
+
+    ml apptainer
+
+4. Start services
+
+    make up
+    
+5. Fetch data, build, load:
+
+    make -j load
+
+6. On successful build, use SSH port forwarding to access http://localhost:8080/minimine/ on the compute node
+
+7. When finished, stop services:
+
+    make down
 
 ### Dev Container (including GitHub Codespace)
 

@@ -58,15 +58,8 @@ RUN cd /mnt/lis-bio-sources \
   &&  rm -rf /home/intermine/.gradle
 
 COPY --link ./mine.properties /etc/
-
-ENV PSQL_USER="postgres"
-ENV PSQL_PWD="postgres"
-ENV TOMCAT_USER="tomcat"
-ENV TOMCAT_PWD="tomcat"
-
 COPY --link --chmod=775 ./entrypoint.sh /usr/local/bin
 COPY --link --from=data /data/ /home/intermine/data/
-
 COPY --link ./${MINE_NAME} /home/intermine/intermine/${MINE_NAME}
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

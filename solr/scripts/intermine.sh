@@ -21,7 +21,7 @@ fi
 
 . /opt/docker-solr/scripts/run-initdb
 
-/opt/docker-solr/scripts/precreate-core "$@"-search
-/opt/docker-solr/scripts/precreate-core "$@"-autocomplete
+/opt/docker-solr/scripts/precreate-core "${MINE_NAME}"-search
+/opt/docker-solr/scripts/precreate-core "${MINE_NAME}"-autocomplete
 
 exec solr -f
