@@ -15,8 +15,8 @@ include .env
 export MINE_NAME
 export APPTAINER_COMPAT := true
 export APPTAINER_ENV_FILE := ${PWD}/.env
-export APPTAINER_WORKDIR := ${TMPDIR}
-DATADIR = ${APPTAINER_WORKDIR}/scratch/home/intermine/data
+WORKDIR := ${TMPDIR}/intermine
+DATADIR = $(WORKDIR)/intermine_builder/scratch/home/intermine/data
 
 ${DATADIR}/crop-ontology/CO_335.obo \
 ${DATADIR}/crop-ontology/CO_340.obo:
@@ -72,9 +72,11 @@ ${DATADIR}/plant-ontology/po.obo \
 ${DATADIR}/plant-trait-ontology/to.obo \
 ${DATADIR}/gene-ontology/go-basic.obo \
 
-${APPTAINER_WORKDIR}/build.done:
-	rsync -a --mkpath --delete ./intermine_builder/intermine/ ${APPTAINER_WORKDIR}/scratch/home/intermine/.intermine
-	rsync -a --mkpath --delete ./intermine_builder/lis-bio-sources/ ${APPTAINER_WORKDIR}/scratch/home/intermine/lis-bio-sources
+$(WORKDIR)/build.done:
+	export APPTAINER_WORKDIR=$(WORKDIR)/intermine_builder
+	mkdir -p $${APPTAINER_WORKDIR}
+	rsync -a --mkpath --delete ./intermine_builder/intermine/ $${APPTAINER_WORKDIR}/scratch/home/intermine/.intermine
+	rsync -a --mkpath --delete ./intermine_builder/lis-bio-sources/ $${APPTAINER_WORKDIR}/scratch/home/intermine/lis-bio-sources
 	apptainer exec \
 	  --home /home/intermine \
 	  --scratch /home/intermine \
@@ -89,11 +91,13 @@ ${APPTAINER_WORKDIR}/build.done:
 	END
 	touch $@
 
-build: ${APPTAINER_WORKDIR}/build.done
+build: $(WORKDIR)/build.done
 
 up: postgres solr tomcat
 
 postgres:
+	export APPTAINER_WORKDIR=$(WORKDIR)/postgres
+	mkdir -p $${APPTAINER_WORKDIR}
 	apptainer instance run \
 	  --bind ./postgres/init_postgresql.sql:/docker-entrypoint-initdb.d/init_postgresql.sql:ro \
 	  --bind ./postgres/postgresql.conf:/opt/postgresql.conf:ro \
@@ -112,6 +116,8 @@ postgres:
 	      -c wal_level=minimal
 
 solr:
+	export APPTAINER_WORKDIR=$(WORKDIR)/solr
+	mkdir -p $${APPTAINER_WORKDIR}
 	apptainer instance run \
 	  --bind ./solr/scripts/intermine.sh:/opt/scripts/intermine.sh:ro \
 	  --env JAVA_OPTS='-Xmx2g -Xms1g -Dorg.apache.el.parser.SKIP_IDENTIFIER_CHECK=true -XX:+UseParallelGC -XX:SoftRefLRUPolicyMSPerMB=1 -XX:MaxHeapFreeRatio=99' \
@@ -121,6 +127,8 @@ solr:
 
 
 tomcat:
+	export APPTAINER_WORKDIR=$(WORKDIR)/tomcat
+	mkdir -p $${APPTAINER_WORKDIR}
 	apptainer exec \
 	  --scratch /usr/local/tomcat/webapps \
 	  $(CONTAINERS)/tomcat_8-jre11-temurin-jammy.sif sh -c 'ln -sf $${CATALINA_HOME}/webapps.dist/* $${CATALINA_HOME}/webapps'
@@ -138,8 +146,9 @@ tomcat:
 	  $(CONTAINERS)/tomcat_8-jre11-temurin-jammy.sif tomcat
 
 load: build data
-	rsync -a --mkpath --delete ./intermine_builder/${MINE_NAME} ${APPTAINER_WORKDIR}/scratch/home/intermine/intermine/
-	mkdir -p ${APPTAINER_WORKDIR}/scratch/home/intermine/data/data-store/
+	export APPTAINER_WORKDIR=$(WORKDIR)/intermine_builder
+	rsync -a --mkpath --delete ./intermine_builder/${MINE_NAME} $${APPTAINER_WORKDIR}/scratch/home/intermine/intermine/
+	mkdir -p $${APPTAINER_WORKDIR}/scratch/home/intermine/data/data-store/
 	apptainer exec \
 	  --home /home/intermine \
 	  --scratch /home/intermine \
