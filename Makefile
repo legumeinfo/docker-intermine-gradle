@@ -119,11 +119,11 @@ solr:
 	export APPTAINER_WORKDIR=$(WORKDIR)/solr
 	mkdir -p $${APPTAINER_WORKDIR}
 	apptainer instance run \
-	  --bind ./solr/scripts/intermine.sh:/opt/scripts/intermine.sh:ro \
+	  --bind ./solr/scripts/intermine.sh:/docker-entrypoint-initdb.d/intermine.sh:ro \
 	  --env JAVA_OPTS='-Xmx2g -Xms1g -Dorg.apache.el.parser.SKIP_IDENTIFIER_CHECK=true -XX:+UseParallelGC -XX:SoftRefLRUPolicyMSPerMB=1 -XX:MaxHeapFreeRatio=99' \
  	  --env SOLR_IP_ALLOWLIST='127.0.0.1, [::1]' \
 	  --scratch /var/solr \
-	  $(CONTAINERS)/solr_8.11-slim.sif solr /opt/scripts/intermine.sh ${MINE_NAME}
+	  $(CONTAINERS)/solr_9.7-slim.sif solr
 
 
 tomcat:
