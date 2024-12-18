@@ -137,7 +137,7 @@ tomcat:
 	  --bind ./tomcat/configs/context.xml:/usr/local/tomcat/conf/context.xml:ro \
 	  --bind ./tomcat/configs/server.xml:/usr/local/tomcat/conf/server.xml:ro \
 	  --bind ./tomcat/configs/tomcat-users.xml:/usr/local/tomcat/conf/tomcat-users.xml:ro \
-	  --bind ./tomcat/configs/web_context.xml:/usr/local/tomcat/webapps.dist/manager/META-INF/tomcat-users.xml:ro \
+	  --bind ./tomcat/configs/web_context.xml:/usr/local/tomcat/webapps.dist/manager/META-INF/context.xml:ro \
 	  --env JAVA_OPTS='-Xmx2g -Xms1g -Dorg.apache.el.parser.SKIP_IDENTIFIER_CHECK=true -XX:+UseParallelGC -XX:SoftRefLRUPolicyMSPerMB=1 -XX:MaxHeapFreeRatio=99' \
 	  --scratch /usr/local/tomcat/webapps \
 	  --scratch /usr/local/tomcat/logs \
