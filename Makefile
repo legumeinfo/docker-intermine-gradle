@@ -131,7 +131,7 @@ tomcat:
 	mkdir -p $${APPTAINER_WORKDIR}
 	apptainer exec \
 	  --scratch /usr/local/tomcat/webapps \
-	  $(CONTAINERS)/tomcat_8-jre11-temurin-jammy.sif sh -c 'ln -sf $${CATALINA_HOME}/webapps.dist/* $${CATALINA_HOME}/webapps'
+	  $(CONTAINERS)/tomcat_9-jre11-temurin-noble.sif sh -c 'ln -sf $${CATALINA_HOME}/webapps.dist/* $${CATALINA_HOME}/webapps'
 	
 	apptainer instance run \
 	  --bind ./tomcat/configs/context.xml:/usr/local/tomcat/conf/context.xml:ro \
@@ -143,7 +143,7 @@ tomcat:
 	  --scratch /usr/local/tomcat/logs \
 	  --scratch /usr/local/tomcat/temp \
 	  --scratch /usr/local/tomcat/work/Catalina/localhost \
-	  $(CONTAINERS)/tomcat_8-jre11-temurin-jammy.sif tomcat
+	  $(CONTAINERS)/tomcat_9-jre11-temurin-noble.sif tomcat
 
 load: build data
 	export APPTAINER_WORKDIR=$(WORKDIR)/intermine_builder
