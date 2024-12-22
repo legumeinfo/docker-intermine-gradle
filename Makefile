@@ -4,12 +4,19 @@
 .ONESHELL:
 .PHONY: down load postgres solr tomcat up
 
-CONTAINERS = /project/legume_project/containers
-DATASTORE = /project/legume_project/datastore/v2
-
 # container images
-ROBOT = apptainer exec $(CONTAINERS)/robot_v1.9.7.sif robot
+CONTAINERS = /project/legume_project/containers
 
+# https://wave.seqera.io/view/builds/bd-fd45f4a88e38da89_1
+# gradle 5.6.4, openjdk 11.0.25
+INTERMINE_BUILDER_IMAGE = $(CONTAINERS)/gradle_openjdk_fd45f4a88e38da89.sif
+INTERMINE_LOADER_IMAGE = $(CONTAINERS)/gradle_openjdk_fd45f4a88e38da89.sif
+POSTGRES_IMAGE = $(CONTAINERS)/postgres_17.2-alpine3.21.sif 
+ROBOT_IMAGE = $(CONTAINERS)/robot_v1.9.7.sif
+SOLR_IMAGE = $(CONTAINERS)/solr_9.7-slim.sif
+TOMCAT_IMAGE = $(CONTAINERS)/tomcat_9-jre17-temurin-noble.sif
+
+DATASTORE = /project/legume_project/datastore/v2
 
 include .env
 export MINE_NAME
@@ -24,7 +31,7 @@ ${DATADIR}/crop-ontology/CO_340.obo:
 	cd ${@D}
 	crop=$(@F:.obo=)
 	curl -LSf  https://cropontology.org/ontology/CO_$${crop}/rdf | \
-      $(ROBOT) convert --check false -i /dev/stdin --format obo -o /dev/stdout | \
+      apptainer exec $(ROBOT_IMAGE) robot convert --check false -i /dev/stdin --format obo -o /dev/stdout | \
         sed -e '/^name:/d' -e "s/CO:$${crop}/CO_$${crop}/g" > $${crop}.obo
 
 ${DATADIR}/InterPro/interpro.xml:
@@ -72,7 +79,7 @@ ${DATADIR}/plant-ontology/po.obo \
 ${DATADIR}/plant-trait-ontology/to.obo \
 ${DATADIR}/gene-ontology/go-basic.obo \
 
-$(WORKDIR)/build.done:
+$(WORKDIR)/intermine_builder/build.done:
 	export APPTAINER_WORKDIR=$(WORKDIR)/intermine_builder
 	mkdir -p $${APPTAINER_WORKDIR}
 	rsync -a --mkpath --delete ./intermine_builder/intermine/ $${APPTAINER_WORKDIR}/scratch/home/intermine/.intermine
@@ -80,18 +87,19 @@ $(WORKDIR)/build.done:
 	apptainer exec \
 	  --home /home/intermine \
 	  --scratch /home/intermine \
-	  $(CONTAINERS)/maven_3-amazoncorretto-11-alpine.sif sh -eux <<"END"
+	  $(INTERMINE_BUILDER_IMAGE) sh -eux <<"END"
 	  cd ~/.intermine
 	  for dir in plugin intermine bio bio/sources bio/postprocess
 	  do
-	    (cd $${dir} && ./gradlew install && ./gradlew clean)
+	    echo "BUILDING: $$dir"
+	    (cd $${dir} && gradle install && gradle clean)
 	  done
 	  cd ~/lis-bio-sources
-	  ./gradlew install
+	  gradle install
 	END
 	touch $@
 
-build: $(WORKDIR)/build.done
+build: $(WORKDIR)/intermine_builder/build.done
 
 up: postgres solr tomcat
 
@@ -104,7 +112,7 @@ postgres:
 	  --scratch /var/lib/postgresql/data,/var/run/postgresql \
 	  --env PGDATA=/var/lib/postgresql/data/pgdata \
 	  --env POSTGRES_INITDB_ARGS='--auth-local=password --encoding=SQL_ASCII --lc-collate=C --lc-ctype=C' \
-	  $(CONTAINERS)/postgres_17.2-alpine3.21.sif postgres \
+	  $(POSTGRES_IMAGE) $${MINE_NAME}-postgres \
 	      -c config_file=/opt/postgresql.conf \
 	      -c checkpoint_timeout=120min \
 	      -c fsync=off \
@@ -123,7 +131,7 @@ solr:
 	  --env JAVA_OPTS='-Xmx2g -Xms1g -Dorg.apache.el.parser.SKIP_IDENTIFIER_CHECK=true -XX:+UseParallelGC -XX:SoftRefLRUPolicyMSPerMB=1 -XX:MaxHeapFreeRatio=99' \
  	  --env SOLR_IP_ALLOWLIST='127.0.0.1, [::1]' \
 	  --scratch /var/solr \
-	  $(CONTAINERS)/solr_9.7-slim.sif solr
+	  $(SOLR_IMAGE) $${MINE_NAME}-solr
 
 
 tomcat:
@@ -131,7 +139,7 @@ tomcat:
 	mkdir -p $${APPTAINER_WORKDIR}
 	apptainer exec \
 	  --scratch /usr/local/tomcat/webapps \
-	  $(CONTAINERS)/tomcat_9-jre11-temurin-noble.sif sh -c 'ln -sf $${CATALINA_HOME}/webapps.dist/* $${CATALINA_HOME}/webapps'
+	  $(TOMCAT_IMAGE) sh -c 'ln -sf $${CATALINA_HOME}/webapps.dist/* $${CATALINA_HOME}/webapps'
 	
 	apptainer instance run \
 	  --bind ./tomcat/configs/context.xml:/usr/local/tomcat/conf/context.xml:ro \
@@ -143,11 +151,11 @@ tomcat:
 	  --scratch /usr/local/tomcat/logs \
 	  --scratch /usr/local/tomcat/temp \
 	  --scratch /usr/local/tomcat/work/Catalina/localhost \
-	  $(CONTAINERS)/tomcat_9-jre11-temurin-noble.sif tomcat
+	  $(TOMCAT_IMAGE) $${MINE_NAME}-tomcat
 
 load: build data
 	export APPTAINER_WORKDIR=$(WORKDIR)/intermine_builder
-	rsync -a --mkpath --delete ./intermine_builder/${MINE_NAME} $${APPTAINER_WORKDIR}/scratch/home/intermine/intermine/
+	rsync -a --mkpath --delete ./mines/${MINE_NAME} $${APPTAINER_WORKDIR}/scratch/home/intermine/intermine/
 	mkdir -p $${APPTAINER_WORKDIR}/scratch/home/intermine/data/data-store/
 	apptainer exec \
 	  --home /home/intermine \
@@ -155,9 +163,25 @@ load: build data
 	  --bind $(DATASTORE):/home/intermine/data/data-store:ro \
 	  --bind ./intermine_builder/mine.properties:/etc/mine.properties:ro \
 	  --bind ./intermine_builder/entrypoint.sh:/usr/local/bin/entrypoint.sh \
-	  $(CONTAINERS)/maven_3-amazoncorretto-11-alpine.sif /usr/local/bin/entrypoint.sh
+	  $(INTERMINE_LOADER_IMAGE) /usr/local/bin/entrypoint.sh
 
 down:
-	apptainer instance stop postgres
-	apptainer instance stop solr
-	apptainer instance stop tomcat
+	if [ $$(apptainer instance list "$${MINE_NAME}-*" | wc -l) -gt 1 ]
+	then
+	  apptainer instance stop "$${MINE_NAME}-*"
+	fi
+
+# Remove postgres, solr, and tomcat data,
+# leaving output of "data" and "build" targets.
+# Used before rerunning "make up; make load".
+mostlyclean: down
+	rm -rf $(WORKDIR)/postgres $(WORKDIR)/solr $(WORKDIR)/tomcat
+
+# Delete build
+clean: mostlyclean
+	rm -rf $(WORKDIR)/intermine_builder/build.done 
+	find $(WORKDIR)/intermine_builder/scratch/home/intermine -mindepth 1 -maxdepth 1 ! -name data -exec rm -rf {} +
+
+# Delete data as well
+distclean: down
+	rm -rf ${WORKDIR}

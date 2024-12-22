@@ -55,17 +55,17 @@ then
   echo "${MINE_NAME} already built"
   exit 0;
 else
-  ./gradlew buildDB --stacktrace
-  ./gradlew buildUserDB --stacktrace
-  ./gradlew integrate --stacktrace
+  gradle buildDB --stacktrace
+  gradle buildUserDB --stacktrace
+  gradle integrate --stacktrace
   ## Run postprocesses individually to avoid postgres
   ## "FATAL: sorry, too many clients already" error
   ## intermine/intermine issue #1971
   #./gradlew postprocess --stacktrace
   for name in $(sed  -n '/post-process/s/.*name="\([^"]*\)".*/\1/p' project.xml)
   do
-    ./gradlew postprocess -Pprocess=${name} --stacktrace
+    gradle postprocess -Pprocess=${name} --stacktrace
   done
 
-  ./gradlew cargoDeployRemote
+  gradle cargoDeployRemote
 fi
