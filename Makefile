@@ -26,6 +26,7 @@ WORKDIR := ${TMPDIR}/intermine
 DATADIR = $(WORKDIR)/intermine_builder/scratch/home/intermine/data
 
 ${DATADIR}/crop-ontology/CO_335.obo \
+${DATADIR}/crop-ontology/CO_336.obo:
 ${DATADIR}/crop-ontology/CO_340.obo:
 	mkdir -p ${@D}
 	cd ${@D}
@@ -67,9 +68,7 @@ ${DATADIR}/gene-ontology/go-basic.obo:
 	mkdir -p $(@D)
 	curl -LSf https://purl.obolibrary.org/obo/go/go-basic.obo > $@
 
-data: \
-${DATADIR}/crop-ontology/CO_335.obo \
-${DATADIR}/crop-ontology/CO_340.obo \
+common-data: \
 ${DATADIR}/InterPro/interpro.xml \
 ${DATADIR}/InterPro/ontology/interpro2go \
 ${DATADIR}/Pfam/pfamA.txt \
@@ -78,6 +77,15 @@ ${DATADIR}/SO-Ontologies/Ontology_Files/so-simple.obo \
 ${DATADIR}/plant-ontology/po.obo \
 ${DATADIR}/plant-trait-ontology/to.obo \
 ${DATADIR}/gene-ontology/go-basic.obo \
+
+minimine-data: common-data \
+               ${DATADIR}/crop-ontology/CO_335.obo \
+               ${DATADIR}/crop-ontology/CO_340.obo
+
+glycinemine-data: common-data \
+                  ${DATADIR}/crop-ontology/CO_336.obo
+
+data: $(MINE_NAME)-data
 
 $(WORKDIR)/intermine_builder/build.done:
 	export APPTAINER_WORKDIR=$(WORKDIR)/intermine_builder
