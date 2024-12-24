@@ -26,7 +26,7 @@ WORKDIR := ${TMPDIR}/intermine
 DATADIR = $(WORKDIR)/intermine_builder/scratch/home/intermine/data
 
 ${DATADIR}/crop-ontology/CO_335.obo \
-${DATADIR}/crop-ontology/CO_336.obo:
+${DATADIR}/crop-ontology/CO_336.obo \
 ${DATADIR}/crop-ontology/CO_340.obo:
 	mkdir -p ${@D}
 	cd ${@D}
@@ -112,6 +112,11 @@ build: $(WORKDIR)/intermine_builder/build.done
 up: postgres solr tomcat
 
 postgres:
+	if [ $$(apptainer instance list "$${MINE_NAME}-postgres" | wc -l) -gt 1 ]
+	then
+	  echo "$${MINE_NAME}-postgres already started; skipping..." 1>&2
+	  exit 0
+	fi
 	export APPTAINER_WORKDIR=$(WORKDIR)/postgres
 	mkdir -p $${APPTAINER_WORKDIR}
 	apptainer instance run \
@@ -132,6 +137,11 @@ postgres:
 	      -c wal_level=minimal
 
 solr:
+	if [ $$(apptainer instance list "$${MINE_NAME}-solr" | wc -l) -gt 1 ]
+	then
+	  echo "$${MINE_NAME}-postgres already started; skipping..." 1>&2
+	  exit 0
+	fi
 	export APPTAINER_WORKDIR=$(WORKDIR)/solr
 	mkdir -p $${APPTAINER_WORKDIR}
 	apptainer instance run \
@@ -143,6 +153,11 @@ solr:
 
 
 tomcat:
+	if [ $$(apptainer instance list "$${MINE_NAME}-tomcat" | wc -l) -gt 1 ]
+	then
+	  echo "$${MINE_NAME}-tomcat already started; skipping..." 1>&2
+	  exit 0
+	fi
 	export APPTAINER_WORKDIR=$(WORKDIR)/tomcat
 	mkdir -p $${APPTAINER_WORKDIR}
 	apptainer exec \
@@ -161,7 +176,7 @@ tomcat:
 	  --scratch /usr/local/tomcat/work/Catalina/localhost \
 	  $(TOMCAT_IMAGE) $${MINE_NAME}-tomcat
 
-load: build data
+load: build data up
 	export APPTAINER_WORKDIR=$(WORKDIR)/intermine_builder
 	rsync -a --mkpath --delete ./mines/${MINE_NAME} $${APPTAINER_WORKDIR}/scratch/home/intermine/intermine/
 	mkdir -p $${APPTAINER_WORKDIR}/scratch/home/intermine/data/data-store/
