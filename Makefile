@@ -2,7 +2,7 @@
 
 .DELETE_ON_ERROR:
 .ONESHELL:
-.PHONY: down load postgres solr tomcat up
+.PHONY: down build postgres solr tomcat up
 
 # container images
 CONTAINERS = /project/legume_project/containers
@@ -22,7 +22,7 @@ include .env
 export MINE_NAME
 export APPTAINER_COMPAT := true
 export APPTAINER_ENV_FILE := ${PWD}/.env
-WORKDIR := ${TMPDIR}/intermine
+WORKDIR := ${TMPDIR}/${MINE_NAME}
 DATADIR = $(WORKDIR)/intermine_builder/scratch/home/intermine/data
 
 ${DATADIR}/crop-ontology/CO_335.obo \
@@ -87,7 +87,7 @@ glycinemine-data: common-data \
 
 data: $(MINE_NAME)-data
 
-$(WORKDIR)/intermine_builder/build.done:
+$(WORKDIR)/intermine_builder/compile.done:
 	export APPTAINER_WORKDIR=$(WORKDIR)/intermine_builder
 	mkdir -p $${APPTAINER_WORKDIR}
 	rsync -a --mkpath --delete ./intermine_builder/intermine/ $${APPTAINER_WORKDIR}/scratch/home/intermine/.intermine
@@ -107,7 +107,7 @@ $(WORKDIR)/intermine_builder/build.done:
 	END
 	touch $@
 
-build: $(WORKDIR)/intermine_builder/build.done
+build: $(WORKDIR)/intermine_builder/compile.done
 
 up: postgres solr tomcat
 
@@ -176,7 +176,7 @@ tomcat:
 	  --scratch /usr/local/tomcat/work/Catalina/localhost \
 	  $(TOMCAT_IMAGE) $${MINE_NAME}-tomcat
 
-load: build data up
+build: compile data up
 	export APPTAINER_WORKDIR=$(WORKDIR)/intermine_builder
 	rsync -a --mkpath --delete ./mines/${MINE_NAME} $${APPTAINER_WORKDIR}/scratch/home/intermine/intermine/
 	mkdir -p $${APPTAINER_WORKDIR}/scratch/home/intermine/data/data-store/
@@ -195,16 +195,15 @@ down:
 	fi
 
 # Remove postgres, solr, and tomcat data,
-# leaving output of "data" and "build" targets.
-# Used before rerunning "make up; make load".
-mostlyclean: down
+# leaving output of "data" and "compile" targets.
+# Used before rerunning "make up; make build".
+cleanbuild: down
 	rm -rf $(WORKDIR)/postgres $(WORKDIR)/solr $(WORKDIR)/tomcat
 
-# Delete build
-clean: mostlyclean
-	rm -rf $(WORKDIR)/intermine_builder/build.done 
+cleancompile: mostlyclean
+	rm -rf $(WORKDIR)/intermine_builder/compile.done 
 	find $(WORKDIR)/intermine_builder/scratch/home/intermine -mindepth 1 -maxdepth 1 ! -name data -exec rm -rf {} +
 
 # Delete data as well
-distclean: down
+clean: down
 	rm -rf ${WORKDIR}

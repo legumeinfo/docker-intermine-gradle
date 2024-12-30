@@ -29,9 +29,9 @@ Allocate at least 32 GB memory and 4 CPUs for the job.
 
     make up
     
-5. Fetch data, build, load:
+5. Fetch data, compile, load:
 
-    make -j load
+    make -j build
 
 6. On successful build, use SSH port forwarding to access http://localhost:8080/minimine/ on the compute node
 
