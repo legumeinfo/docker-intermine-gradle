@@ -107,7 +107,7 @@ $(WORKDIR)/intermine_builder/compile.done:
 	END
 	touch $@
 
-build: $(WORKDIR)/intermine_builder/compile.done
+compile: $(WORKDIR)/intermine_builder/compile.done
 
 up: postgres solr tomcat
 

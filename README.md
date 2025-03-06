@@ -25,11 +25,7 @@ Allocate at least 32 GB memory and 4 CPUs for the job.
 
     ml apptainer
 
-4. Start services
-
-    make up
-    
-5. Fetch data, compile, load:
+4. Start services, fetch data, compile, load:
 
     make -j build
 
