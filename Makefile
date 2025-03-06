@@ -19,6 +19,9 @@ TOMCAT_IMAGE = $(CONTAINERS)/tomcat_9-jre17-temurin-noble.sif
 DATASTORE = /project/legume_project/datastore/v2
 
 include .env
+# Ensure these variables are unset. They may be propagated from the Slurm submit host,
+# reference paths that don't exist on the compute node, and cause issues with `apptainer instance run`
+unexport DBUS_SESSION_BUS_ADDRESS XDG_RUNTIME_DIR
 export MINE_NAME
 export APPTAINER_COMPAT := true
 export APPTAINER_ENV_FILE := ${PWD}/.env
