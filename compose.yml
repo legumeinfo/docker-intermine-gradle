@@ -5,8 +5,19 @@ services:
     build:
       context: ./intermine_builder
       dockerfile: ./intermine_builder.Dockerfile
+      additional_contexts:
+        mines: ./mines
       args:
         MINE_NAME: ${MINE_NAME}
+    environment:
+      PGHOST: postgres
+      PGPORT: ${PGPORT}
+      PGUSER: ${PGUSER}
+      PGPASSWORD: ${PGPASSWORD}
+      SOLR_HOST: ${SOLR_HOST}
+      TOMCAT_HOST_PORT: ${TOMCAT_HOST_PORT}
+      TOMCAT_USER: ${TOMCAT_USER}
+      TOMCAT_PWD: ${TOMCAT_PWD}
     volumes:
       - ./data/data-store:/home/intermine/data/data-store:ro
       - /home/intermine/.gradle
@@ -23,7 +34,7 @@ services:
     environment:
       PGDATA: /var/lib/postgresql/data/pgdata
       POSTGRES_PASSWORD: postgres
-      POSTGRES_INITDB_ARGS: --auth=peer --encoding=SQL_ASCII --lc-collate=C --lc-ctype=C
+      POSTGRES_INITDB_ARGS: --encoding=SQL_ASCII --lc-collate=C --lc-ctype=C
     user: postgres
     shm_size: 1g
     command: ["-c", "config_file=/opt/postgresql.conf",
@@ -42,20 +53,24 @@ services:
       - /var/lib/postgresql/data
 
   solr:
-    build:
-      context: ./solr
-      dockerfile: ./solr.Dockerfile
+    image: docker.io/library/solr:9.8-slim
     environment:
-      - MEM_OPTS=${MEM_OPTS:-"-Xmx2g -Xms1s"}
-      - MINE_NAME=${MINE_NAME}
+      JAVA_OPTS: ${JAVA_OPTS}
+      MINE_NAME: ${MINE_NAME}
+    healthcheck:
+      test: "curl -s -f http://127.0.0.1:8983/solr/${MINE_NAME}-search/admin/ping || exit 1"
     volumes:
+      - ./solr/scripts/intermine.sh:/docker-entrypoint-initdb.d/intermine.sh:ro
       - /var/solr
 
   tomcat:
-    build:
-      context: ./tomcat
-      dockerfile: ./tomcat.Dockerfile
+    image: docker.io/library/tomcat:9-jre17-temurin-noble
     environment:
-      - MEM_OPTS=${MEM_OPTS:-"-Xmx1g -Xms500m"}
+      JAVA_OPTS: ${JAVA_OPTS}
     ports:
       - ${TOMCAT_HOST_PORT:-9999}:${TOMCAT_PORT:-8080}
+    volumes:
+      - ./tomcat/configs/context.xml:/usr/local/tomcat/conf/context.xml:ro
+      - ./tomcat/configs/server.xml:/usr/local/tomcat/conf/server.xml:ro
+      - ./tomcat/configs/tomcat-users.xml:/usr/local/tomcat/conf/tomcat-users.xml:ro
+      - ./tomcat/configs/web_context.xml:/usr/local/tomcat/webapps.dist/manager/META-INF/context.xml:ro

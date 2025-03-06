@@ -2,7 +2,7 @@ FROM docker.io/obolibrary/robot:v1.9.7 AS data
 SHELL ["/bin/bash", "-o", "pipefail", "-euc"]
 
 WORKDIR /data/crop-ontology
-RUN for crop in 335 340; \
+RUN for crop in 335 336 340; \
   do curl -LSf  https://cropontology.org/ontology/CO_${crop}/rdf \
      | robot convert --check false -i /dev/stdin --format obo -o /dev/stdout \
      | sed -e '/^name:/d' -e "s/CO:${crop}/CO_${crop}/g" > CO_${crop}.obo; done
@@ -24,7 +24,7 @@ RUN curl -LSfO https://purl.obolibrary.org/obo/go/go-basic.obo
 WORKDIR /data/InterPro/ontology
 RUN curl -LSfO https://ftp.ebi.ac.uk/pub/databases/GO/goa/external2go/interpro2go
 
-FROM docker.io/library/maven:3-amazoncorretto-11-alpine AS mine
+FROM docker.io/library/gradle:5.6.4-jdk11 AS mine
 ARG MINE_NAME
 ENV MINE_NAME ${MINE_NAME}
 
@@ -60,6 +60,6 @@ RUN cd /mnt/lis-bio-sources \
 COPY --link ./mine.properties /etc/
 COPY --link --chmod=775 ./entrypoint.sh /usr/local/bin
 COPY --link --from=data /data/ /home/intermine/data/
-COPY --link ./${MINE_NAME} /home/intermine/intermine/${MINE_NAME}
+COPY --link --from=mines ${MINE_NAME} /home/intermine/intermine/${MINE_NAME}
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
