@@ -29,7 +29,7 @@ Allocate at least 32 GB memory and 4 CPUs for the job.
 
     make -j build
 
-6. On successful build, use SSH port forwarding to access http://localhost:8080/minimine/ on the compute node
+6. On successful build, use SSH port forwarding from the client (`ssh -NL 8080:<compute-node>:8080 <login-node>`) and access http://localhost:8080/minimine/
 
 7. When finished, stop services:
 
